@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <script src="../pixi/pixi.min.js"></script>
+</head>
+<body>
+    <script>
+
+        //Aliases
+        let Application = PIXI.Application,
+            Container = PIXI.Container,
+            loader = PIXI.loader,
+            resources = PIXI.loader.resources,
+            Graphics = PIXI.Graphics,
+            TextureCache = PIXI.utils.TextureCache,
+            Sprite = PIXI.Sprite,
+            Text = PIXI.Text,
+            TextStyle = PIXI.TextStyle;
+
+        // Creating a canvas
+        let app = new Application({ 
+            width: 512, 
+            height: 512,                       
+            antialiasing: true, 
+            transparent: false, 
+            resolution: 1
+        });
+
+        // Adding canvas to html body
+        document.body.appendChild(app.view);
+        
+        //Add image to loader through add(), so that it can load it during html rederering.
+        //setup function will execute when loading is done because of load().
+        loader.add("images/treasureHunter.json").load(setup);
+        // PIXI.loader.add("images/cat.png").load(setup);
+
+        let door, player, treasure, blob, healthBar, dungeon, state,
+        gameScene, gameOverScene, id, blobs, message;
+
+        function setup() {
+            //texture will convert it into WebGL ready format
+            //accessing the image with resources() for texture to use it.
+            //cat is a Sprite, which goes to a Container.
+            // let cat = new PIXI.Sprite(PIXI.loader.resources["images/cat.png"].texture);
+
+            gameScene = new Container();
+            app.stage.addChild(gameScene);
+
+            id = resources["images/treasureHunter.json"].textures;
+
+            // Creating dungeon Sprite
+            dungeon = new Sprite(id["dungeon.png"]);
+
+            //stage is the root Container. It goes to Canvas by addChild()
+            gameScene.addChild(dungeon);
+
+            // Creating player Sprite
+            player = new Sprite(id["explorer.png"]);
+            player.x = 48;
+            player.y = gameScene.height / 2 - player.height / 2;
+            player.vx = 0;
+            player.vy = 0;
+            gameScene.addChild(player);
+
+            // Creating treasure Sprite
+            treasure = new Sprite(id["treasure.png"]);
+            treasure.x = gameScene.width - treasure.width - 48;
+            treasure.y = gameScene.height / 2 - treasure.height / 2;
+            gameScene.addChild(treasure);
+
+            // Creating door Sprite
+            door = new Sprite(id["door.png"]);
+        
+            // another way to set x, y position
+            door.position.set(32,0);
+            gameScene.addChild(door);
+
+            // Creating blobs Sprite
+            let numberOfBlobs = 6;
+            spacing = 48;
+            xOffset = 150;
+            speed = 2;
+            direction = 1;
+
+            blobs = [];
+
+            for (let i = 0; i < numberOfBlobs; i++) {
+                blob = new Sprite(id["blob.png"]);
+                let x = spacing * i + xOffset;
+                let y = randomInt(0, app.stage.height - blob.height);
+                blob.x = x;
+                blob.y = y;
+                blob.vx = 0;
+                blob.vy = speed * direction;
+                direction = -1;
+                blobs.push(blob);
+                gameScene.addChild(blob);
+            }
+
+            //Create the health bar
+            healthBar = new Container();
+            healthBar.position.set(app.stage.width - 170, 4)
+            gameScene.addChild(healthBar);
+
+            //Create the black background rectangle
+            let innerBar = new Graphics();
+            innerBar.beginFill(0x000000);
+            innerBar.drawRect(0, 0, 128, 8);
+            innerBar.endFill();
+            healthBar.addChild(innerBar);
+
+            //Create the front red rectangle
+            let outerBar = new Graphics();
+            outerBar.beginFill(0xFF3300);
+            outerBar.drawRect(0, 0, 128, 8);
+            outerBar.endFill();
+            healthBar.addChild(outerBar);
+
+            healthBar.outer = outerBar;
+
+            // creating game over scene
+            gameOverScene = new Container();
+            app.stage.addChild(gameOverScene);
+            gameOverScene.visible = false;
+
+            let style = new TextStyle({
+                fontFamily: "Futura",
+                fontSize: 64,
+                fill: "white"
+            });
+            message = new Text("Game Over", style);
+            message.position.set(gameOverScene.width / 2, gameOverScene.height / 2);
+            gameOverScene.addChild(message);
+
+            let left = keyboard(37),
+                right = keyboard(39),
+                up = keyboard(38),
+                down = keyboard(40);
+
+            left.press = function() {
+                player.vx = -5;
+                player.vy = 0;
+            };
+            left.release = function() {
+                if(!right.isDown && player.vy === 0) {
+                    player.vx = 0;
+                }
+            };
+
+            right.press = function() {
+                player.vx = 5;
+                player.vy = 0;
+            };
+            right.release = function() {
+                if(!left.isDown && player.vy === 0) {
+                    player.vx = 0;
+                }
+            };
+
+            up.press = function() {
+                player.vx = 0;
+                player.vy = -5;
+            };
+            up.release = function() {
+                if(!down.isDown && player.vx === 0) {
+                    player.vy = 0;
+                }
+            };
+
+            down.press = function() {
+                player.vx = 0;
+                player.vy = 5;
+            };
+            down.release = function() {
+                if(!up.isDown && player.vx === 0) {
+                    player.vy = 0;
+                }
+            };
+
+            state = play;
+            app.ticker.add(delta => gameLoop(delta));
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max- min + 1)) + min;
+        }
+
+        function keyboard(keyCode) {
+            let key = { };
+            key.code = keyCode;
+            key.isDown = false;
+            key.isUp = true;
+            key.press = undefined;
+            key.release = undefined;
+
+            key.downHandler = function(event) {
+                if(event.keyCode === key.code) {
+                    if(key.isUp && key.press) key.press();
+                    key.isDown = true;
+                    key.isUp = false;
+                }
+                event.preventDefault();
+            };
+
+            key.upHandler = function(event) {
+                if(event.keyCode === key.code) {
+                    if(key.isDown && key.release) key.release();
+                    key.isDown = false;
+                    key.isUp =true;
+                }
+                event.preventDefault();
+            };
+
+            const downListener = key.downHandler.bind(key);
+            const upListener = key.upHandler.bind(key);
+
+            window.addEventListener("keydown", downListener, false);
+            window.addEventListener("keyup", upListener, false);
+
+            return key;
+        }
+
+        function gameLoop(delta) {
+            state(delta);
+        }
+
+        function play(delta) {
+            let explorerHit, blobHitsWall;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            contain(player, {x:28, y:10, width:488, height:480});
+
+            explorerHit = false;
+            blobs.forEach(function(blob) {
+                blob.y += blob.vy;
+                blobHitsWall = contain(blob, {x:28, y:10, width:488, height:480});
+                if(blobHitsWall === "top" || blobHitsWall === "bottom") {
+                    blob.vy *= -1;
+                }
+                if(hitTestRectangle(player, blob)) {
+                    explorerHit = true;
+                }
+            });
+            if(explorerHit) {
+                player.alpha = 0.5;
+                healthBar.outer.width -= 1;
+            } else {
+                player.alpha = 1;
+            }
+            if(hitTestRectangle(player, treasure)) {
+                treasure.x = player.x + 8;
+                treasure.y = player.y + 8;
+            }
+
+            if (healthBar.outer.width < 0) {
+                state = end;
+                message.text = "You lost!";
+                message.position.set(gameOverScene.width / 2, gameOverScene.height / 2);
+            }
+
+            if (hitTestRectangle(treasure, door)) {
+                state = end;
+                message.text = "You won!";
+                message.position.set(gameOverScene.width / 2, gameOverScene.height / 2);
+            } 
+        }
+
+        function end() {
+            gameScene.visible = false;
+            gameOverScene.visible = true;
+        }
+
+        function contain(sprite, container) {
+            let collision = undefined;
+            //Left
+            if (sprite.x < container.x) {
+                sprite.x = container.x;
+                collision = "left";
+            }
+
+            //Top
+            if (sprite.y < container.y) {
+                sprite.y = container.y;
+                collision = "top";
+            }
+
+            //Right
+            if (sprite.x + sprite.width > container.width) {
+                sprite.x = container.width - sprite.width;
+                collision = "right";
+            }
+
+            //Bottom
+            if (sprite.y + sprite.height > container.height) {
+                sprite.y = container.height - sprite.height;
+                collision = "bottom";
+            }
+            return collision;
+        }
+
+        function hitTestRectangle(sprite1, sprite2) {
+            let hit, vx, vy, combinedHalfWidths,
+                combinedHalfheights;
+
+            hit = false;
+
+            sprite1.centerX = sprite1.x + sprite1.width / 2;
+            sprite2.centerX = sprite2.x + sprite2.width / 2;
+            sprite1.centerY = sprite1.y + sprite1.height / 2;
+            sprite2.centerY = sprite2.y + sprite2.height / 2;
+
+            sprite1.halfWidth = sprite1.width / 2;
+            sprite1.halfHeight = sprite1.height / 2;
+            sprite2.halfWidth = sprite2.width / 2;
+            sprite2.halfHeight = sprite2.height / 2;
+
+            vx = sprite2.centerX - sprite1.centerX;
+            vy = sprite2.centerY - sprite1.centerY;
+
+            combinedHalfWidths = sprite1.halfWidth + sprite2.halfWidth;
+            combinedHalfheights = sprite1.halfHeight + sprite2.halfHeight;
+
+            if(Math.abs(vx) < combinedHalfWidths) {
+                if(Math.abs(vy) < combinedHalfheights) {
+                    hit = true;
+                } else {
+                    hit = false;
+                }
+            } else {
+                hit = false;
+            }
+
+            return hit;
+        }
+    </script>
+</body>
+</html>
