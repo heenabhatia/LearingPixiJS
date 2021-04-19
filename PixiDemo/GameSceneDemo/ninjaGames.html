@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Games</title>
+    <script src="/pixi/pixi.min.js"></script>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from '/GameSceneDemo/threeJS/three.module.js';
+        import { GLTFLoader } from '/GameSceneDemo/threeJS/GLTFLoader.js';
+        import { OrbitControls } from '/GameSceneDemo/threeJS/OrbitControls.js';
+        import { DragControls } from '/GameSceneDemo/threeJS/DragControls.js';
+
+        let camera, scene, renderer;
+        let mesh, mesh1;
+
+        init();
+        animate();
+
+        function init() {
+
+            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight);
+            camera.position.set(0,100,1000);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x5f5f0f);
+
+            const texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+
+            const geometry = new THREE.BoxGeometry( 200, 200, 200 );
+            const material = new THREE.MeshBasicMaterial( { map: texture  } );
+
+            mesh = new THREE.Mesh( geometry, material );
+            mesh.position.x = 10;
+            scene.add( mesh );
+
+            const objects = [];
+            objects.push( mesh );
+
+            const geometry1 = new THREE.BoxGeometry( 100, 100, 100 );
+            const material1 = new THREE.MeshBasicMaterial( { map: texture  } );
+
+            mesh1 = new THREE.Mesh( geometry1, material1 );
+            mesh.position.x = 250;
+            scene.add( mesh1 );
+
+            objects.push( mesh1 );
+
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            // renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+
+            const orbitControl = new OrbitControls(camera,renderer.domElement);
+            camera.position.set( 0, 20, 100 );
+            orbitControl.update();
+
+            const dragControl = new DragControls( objects, camera, renderer.domElement );
+            dragControl.addEventListener( 'dragstart', function ( event ) {
+                event.object.material.emissive.set( 0xaaaaaa );
+            } );
+
+            dragControl.addEventListener( 'dragend', function ( event ) {
+                event.object.material.emissive.set( 0x000000 );
+            } );
+
+            // var loader = new GLTFLoader();
+            // loader.load( 'textures/ninja.gltf', function ( gltf ) {
+            //     scene.add( gltf.scene );
+            // })
+
+            window.addEventListener( 'resize', onWindowResize );
+
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+        }
+
+        function animate() {
+            requestAnimationFrame( animate );
+            mesh.rotation.x += 0.005;
+            mesh.rotation.y += 0.01;
+            renderer.render( scene, camera );
+        }
+    </script>
+</body>
+</html>
+
