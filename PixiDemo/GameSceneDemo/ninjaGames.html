@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ninja Games</title>
-    <script src="/pixi/pixi.min.js"></script>
+    <script src="/GameSceneDemo/pixi/pixi.min.js"></script>
 </head>
 <body>
     <script type="module">
@@ -13,68 +13,57 @@
         import { OrbitControls } from '/GameSceneDemo/threeJS/OrbitControls.js';
         import { DragControls } from '/GameSceneDemo/threeJS/DragControls.js';
 
-        let camera, scene, renderer;
-        let mesh, mesh1;
+        let camera, scene3D, renderer;
+        let cube1, cube2;
 
-        init();
-        animate();
+        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight);
+        camera.position.set(0,100,1000);
 
-        function init() {
+        scene3D = new THREE.Scene();
+        scene3D.background = new THREE.Color(0x5f5f0f);
 
-            camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight);
-            camera.position.set(0,100,1000);
+        const texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
 
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x5f5f0f);
+        const geometry = new THREE.BoxGeometry( 200, 200, 200 );
+        const material = new THREE.MeshBasicMaterial( { map: texture  } );
 
-            const texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+        cube1 = new THREE.Mesh( geometry, material );
+        cube1.position.x = 10;
+        scene3D.add( cube1 );
 
-            const geometry = new THREE.BoxGeometry( 200, 200, 200 );
-            const material = new THREE.MeshBasicMaterial( { map: texture  } );
+        const cubes = [];
+        cubes.push( cube1 );
 
-            mesh = new THREE.Mesh( geometry, material );
-            mesh.position.x = 10;
-            scene.add( mesh );
+        const geometry1 = new THREE.BoxGeometry( 100, 100, 100 );
+        const material1 = new THREE.MeshBasicMaterial( { map: texture  } );
 
-            const objects = [];
-            objects.push( mesh );
+        cube2 = new THREE.Mesh( geometry1, material1 );
+        cube2.position.x = 250;
+        scene3D.add( cube2 );
 
-            const geometry1 = new THREE.BoxGeometry( 100, 100, 100 );
-            const material1 = new THREE.MeshBasicMaterial( { map: texture  } );
-
-            mesh1 = new THREE.Mesh( geometry1, material1 );
-            mesh.position.x = 250;
-            scene.add( mesh1 );
-
-            objects.push( mesh1 );
+        cubes.push( cube2 );
 
 
-            renderer = new THREE.WebGLRenderer( { antialias: true } );
-            // renderer.setPixelRatio( window.devicePixelRatio );
-            renderer.setSize( window.innerWidth, window.innerHeight );
-            document.body.appendChild( renderer.domElement );
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        // renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
 
-            const orbitControl = new OrbitControls(camera,renderer.domElement);
-            camera.position.set( 0, 20, 100 );
-            orbitControl.update();
+        // const orbitControl = new OrbitControls(camera,renderer.domElement);
+        // camera.position.set( 0, 20, 100 );
+        // orbitControl.update();
 
-            const dragControl = new DragControls( objects, camera, renderer.domElement );
-            dragControl.addEventListener( 'dragstart', function ( event ) {
-                event.object.material.emissive.set( 0xaaaaaa );
-            } );
+        const dragControl = new DragControls( cubes, camera, renderer.domElement );
+        dragControl.addEventListener( 'drag', function ( event) {
+            renderer.render( scene3D, camera );
+        });
 
-            dragControl.addEventListener( 'dragend', function ( event ) {
-                event.object.material.emissive.set( 0x000000 );
-            } );
+        // var loader = new GLTFLoader();
+        // loader.load( 'textures/ninja.gltf', function ( gltf ) {
+        //     scene3D.add( gltf.scene );
+        // })
 
-            // var loader = new GLTFLoader();
-            // loader.load( 'textures/ninja.gltf', function ( gltf ) {
-            //     scene.add( gltf.scene );
-            // })
-
-            window.addEventListener( 'resize', onWindowResize );
-
-        }
+        window.addEventListener( 'resize', onWindowResize );
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -84,10 +73,16 @@
 
         function animate() {
             requestAnimationFrame( animate );
-            mesh.rotation.x += 0.005;
-            mesh.rotation.y += 0.01;
-            renderer.render( scene, camera );
+            // cube2.rotation.x += 0.005;
+            // cube1.rotation.y += 0.01;
+            renderer.render( scene3D, camera );
         }
+
+        // function render() {
+        //     renderer.render( scene3D, camera );
+        // }
+
+        animate();
     </script>
 </body>
 </html>

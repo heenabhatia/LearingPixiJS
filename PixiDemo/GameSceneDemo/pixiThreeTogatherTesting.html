@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Games</title>
+    <script src="/GameSceneDemo/pixi/pixi.min.js"></script>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from '/GameSceneDemo/threeJS/three.module.js';
+        import { GLTFLoader } from '/GameSceneDemo/threeJS/GLTFLoader.js';
+        import { OrbitControls } from '/GameSceneDemo/threeJS/OrbitControls.js';
+        import { DragControls } from '/GameSceneDemo/threeJS/DragControls.js';
+
+        //Aliases
+        let Application = PIXI.Application,
+            Container = PIXI.Container,
+            loader = PIXI.loader,
+            resources = PIXI.loader.resources,
+            Graphics = PIXI.Graphics,
+            TextureCache = PIXI.utils.TextureCache,
+            Sprite = PIXI.Sprite,
+            Text = PIXI.Text,
+            TextStyle = PIXI.TextStyle;
+
+        let camera, scene2D, scene3D, renderer2D, renderer3D;
+        let cube1, cube2, canvas2D, texture3D, sprite3D;
+
+        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight);
+        camera.position.set(0,100,1000);
+
+        scene3D = new THREE.Scene();
+        scene3D.background = new THREE.Color(0x5f5f0f);
+
+        const texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+
+        const geometry = new THREE.BoxGeometry( 200, 200, 200 );
+        const material = new THREE.MeshBasicMaterial( { map: texture  } );
+
+        cube1 = new THREE.Mesh( geometry, material );
+        cube1.position.x = 10;
+        scene3D.add( cube1 );
+
+        const cubes = [];
+        cubes.push( cube1 );
+
+        const geometry1 = new THREE.BoxGeometry( 100, 100, 100 );
+        const material1 = new THREE.MeshBasicMaterial( { map: texture  } );
+
+        cube2 = new THREE.Mesh( geometry1, material1 );
+        cube2.position.x = 250;
+        scene3D.add( cube2 );
+
+        cubes.push( cube2 );
+
+        renderer3D = new THREE.WebGLRenderer( { antialias: true } );
+        // renderer3D.setPixelRatio( window.devicePixelRatio );
+        renderer3D.setSize( window.innerWidth, window.innerHeight );
+        // document.body.appendChild( renderer3D.domElement );
+
+        renderer3D.render( scene3D, camera );
+
+        // Creating 2D canvas from another canvas element in PIXI.
+        let detectedOptions = {
+            transparent:false, antialias: true, 
+            resolution: window.devicePixelRatio
+        };
+        scene2D = new PIXI.Container();
+
+        canvas2D = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight, detectedOptions);
+        canvas2D.backgroundColor = 0xffffff;
+        document.body.appendChild( canvas2D.view );
+
+        texture3D = PIXI.Texture.fromCanvas(renderer3D.domElement);
+        sprite3D =  new Sprite(texture3D);
+        scene2D.addChild(sprite3D);
+
+        // const orbitControl = new OrbitControls(camera,renderer3D.domElement);
+        // camera.position.set( 0, 20, 100 );
+        // orbitControl.update();
+
+        const dragControl = new DragControls( cubes, camera, canvas2D.view );
+        dragControl.addEventListener( 'drag', function ( event) {
+            renderer3D.render( scene3D, camera );
+            sprite3D.texture.update();
+            canvas2D.render( scene2D );
+        });
+
+        let left = keyboard(37),
+            right = keyboard(39),
+            up = keyboard(38),
+            down = keyboard(40);
+
+        left.press = function() {
+            sprite3D.vx = -5;
+            sprite3D.vy = 0;
+            // sprite3D.x += sprite3D.vx;
+            // sprite3D.y += sprite3D.vy;
+            // animate();
+        };
+        left.release = function() {
+            if(!right.isDown && sprite3D.vy === 0) {
+                sprite3D.vx = 0;
+            }
+        };
+
+        right.press = function() {
+            sprite3D.vx = 5;
+            sprite3D.vy = 0;
+            animate();
+        };
+        right.release = function() {
+            if(!left.isDown && sprite3D.vy === 0) {
+                sprite3D.vx = 0;
+            }
+        };
+
+        up.press = function() {
+            sprite3D.vx = 0;
+            sprite3D.vy = -5;
+            animate();
+        };
+        up.release = function() {
+            if(!down.isDown && sprite3D.vx === 0) {
+                sprite3D.vy = 0;
+            }
+        };
+
+        down.press = function() {
+            sprite3D.vx = 0;
+            sprite3D.vy = 5;
+            animate();
+        };
+        down.release = function() {
+            if(!up.isDown && sprite3D.vx === 0) {
+                sprite3D.vy = 0;
+            }
+        };
+
+        // var loader = new GLTFLoader();
+        // loader.load( 'textures/ninja.gltf', function ( gltf ) {
+        //     scene3D.add( gltf.scene );
+        // })
+
+        window.addEventListener( 'resize', onWindowResize );
+
+        let state = play;
+        canvas2D.ticker.add( delta => gameLoop(delta) );
+
+        function gameLoop(delta) {
+            state(delta);
+        }
+
+        function play(delta) {
+            sprite3D.x += sprite3D.vx;
+            sprite3D.y += sprite3D.vy;
+            animate();
+        }
+
+        function end() {
+            // gameScene.visible = false;
+            // gameOverScene.visible = true;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer3D.setSize( window.innerWidth, window.innerHeight );
+            // canvas2D.width = window.innerWidth;
+            // canvas2D.height = window.innerHeight;
+        }
+
+        function animate() {           
+            // cube2.rotation.x += 0.005;
+            // cube1.rotation.y += 0.01;
+            renderer3D.render( scene3D, camera );
+            sprite3D.texture.update(); //notify PIXI that three js has changed
+            canvas2D.render( scene2D );
+            requestAnimationFrame( animate );
+        }
+
+        function keyboard(keyCode) {
+            let key = { };
+            key.code = keyCode;
+            key.isDown = false;
+            key.isUp = true;
+            key.press = undefined;
+            key.release = undefined;
+
+            key.downHandler = function(event) {
+                if(event.keyCode === key.code) {
+                    if(key.isUp && key.press) key.press();
+                    key.isDown = true;
+                    key.isUp = false;
+                }
+                event.preventDefault();
+            };
+
+            key.upHandler = function(event) {
+                if(event.keyCode === key.code) {
+                    if(key.isDown && key.release) key.release();
+                    key.isDown = false;
+                    key.isUp =true;
+                }
+                event.preventDefault();
+            };
+
+            const downListener = key.downHandler.bind(key);
+            const upListener = key.upHandler.bind(key);
+
+            window.addEventListener("keydown", downListener, false);
+            window.addEventListener("keyup", upListener, false);
+
+            return key;
+        }
+
+        // function render() {
+        //     renderer3D.render( scene3D, camera );
+        // }
+
+        animate();
+    </script>
+</body>
+</html>
+
