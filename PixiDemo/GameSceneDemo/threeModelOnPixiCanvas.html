@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ninja Games</title>
+    <script src="/GameSceneDemo/pixi/pixi.min.js"></script>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from '/GameSceneDemo/threeJS/three.module.js';
+        import { GLTFLoader } from '/GameSceneDemo/threeJS/GLTFLoader.js';
+        import { OrbitControls } from '/GameSceneDemo/threeJS/OrbitControls.js';
+        import { DragControls } from '/GameSceneDemo/threeJS/DragControls.js';
+
+        //Aliases
+        let Application = PIXI.Application,
+            Container = PIXI.Container,
+            loader = PIXI.loader,
+            resources = PIXI.loader.resources,
+            Graphics = PIXI.Graphics,
+            TextureCache = PIXI.utils.TextureCache,
+            Sprite = PIXI.Sprite,
+            Text = PIXI.Text,
+            TextStyle = PIXI.TextStyle;
+
+        let camera, scene2D, scene3D, renderer2D, renderer3D;
+        let mesh, canvas2D, texture3D, sprite3D;
+        let meshes = [];
+
+        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight);
+        camera.position.set(0,100,1000);
+
+        scene3D = new THREE.Scene();
+        scene3D.background = new THREE.Color(0x5f5f0f);
+
+        renderer3D = new THREE.WebGLRenderer( { antialias: true } );
+        renderer3D.setSize( window.innerWidth, window.innerHeight );
+        // document.body.appendChild( renderer3D.domElement );
+
+        // Creating 2D canvas from another canvas element in PIXI.
+        let detectedOptions = {
+            transparent:false, antialias: true, 
+            resolution: window.devicePixelRatio
+        };
+        scene2D = new PIXI.Container();
+
+        canvas2D = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight, detectedOptions);
+        canvas2D.backgroundColor = 0xffffff;
+        document.body.appendChild( canvas2D.view );
+
+        texture3D = PIXI.Texture.fromCanvas(renderer3D.domElement);
+        sprite3D =  new Sprite(texture3D);
+        scene2D.addChild(sprite3D);
+
+        const ambient = new THREE.AmbientLight( 0xc4c4c4, 1 );
+        scene3D.add( ambient );
+        
+        const pointLight = new THREE.PointLight( 0xc4c4c4, 1);
+        scene3D.add( pointLight );
+
+        let ninjaLoader = new GLTFLoader();
+        ninjaLoader.load( 'textures/cibus_ninja.glb', function ( gltf ) {
+            mesh = gltf.scene.children[0];
+            mesh.scale.set(100.0,100.0,100.0);
+            scene3D.add( mesh );
+            mesh.position.z = 10;
+            renderer3D.render( scene3D, camera );
+            animate();
+            meshes.push( mesh );
+        });
+
+        const orbitControl = new OrbitControls(camera,canvas2D.view);
+        // camera.position.set( 0, 20, 100 );
+        orbitControl.update();
+
+        // const dragControl = new DragControls( meshes, camera, canvas2D.view );
+        // dragControl.addEventListener( 'drag', function ( event) {
+        //     canvas2D.render( scene2D );
+        //     renderer3D.render( scene3D, camera );
+        //     sprite3D.texture.update();          
+        // });
+
+        left.press = function() {
+            canvas2D.vx = -5;
+            canvas2D.vy = 0;
+            gameLoop;
+        };
+        left.release = function() {
+            if(!right.isDown && canvas2D.vy === 0) {
+                canvas2D.vx = 0;
+                gameLoop;
+            }
+        };
+
+        gameLoop;
+        // let state = play;
+        // canvas2D.ticker.add(delta => gameLoop(delta));
+
+        function gameLoop() {
+            // animate();
+            canvas2D.x += canvas2D.vx;
+            canvas2D.y += canvas2D.vy;
+            animate();
+        }
+
+        window.addEventListener( 'resize', onWindowResize );
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer3D.setSize( window.innerWidth, window.innerHeight );
+            // canvas2D.width = window.innerWidth;
+            // canvas2D.height = window.innerHeight;
+        }
+
+        function animate() {           
+            // cube2.rotation.x += 0.005;
+            // cube1.rotation.y += 0.01;
+            renderer3D.render( scene3D, camera );
+            sprite3D.texture.update(); //notify PIXI that three js has changed
+            canvas2D.render( scene2D );
+            requestAnimationFrame( animate );
+        }
+
+        // function render() {
+        //     renderer3D.render( scene3D, camera );
+        // }
+
+        animate();
+    </script>
+</body>
+</html>

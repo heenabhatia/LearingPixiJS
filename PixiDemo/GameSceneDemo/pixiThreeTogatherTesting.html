@@ -138,25 +138,25 @@
             }
         };
 
-        // var loader = new GLTFLoader();
-        // loader.load( 'textures/ninja.gltf', function ( gltf ) {
-        //     scene3D.add( gltf.scene );
-        // })
+        let ninjaLoader = new GLTFLoader();
+        ninjaLoader.load( 'textures/ninja.gltf', function ( gltf ) {
+            scene3D.add( gltf.scene );
+        })
 
         window.addEventListener( 'resize', onWindowResize );
 
-        let state = play;
-        canvas2D.ticker.add( delta => gameLoop(delta) );
+        // let state = play;
+        // canvas2D.ticker.add( delta => gameLoop(delta) );
 
-        function gameLoop(delta) {
-            state(delta);
-        }
+        // function gameLoop(delta) {
+        //     state(delta);
+        // }
 
-        function play(delta) {
-            sprite3D.x += sprite3D.vx;
-            sprite3D.y += sprite3D.vy;
-            animate();
-        }
+        // function play(delta) {
+        //     sprite3D.x += sprite3D.vx;
+        //     sprite3D.y += sprite3D.vy;
+        //     animate();
+        // }
 
         function end() {
             // gameScene.visible = false;
